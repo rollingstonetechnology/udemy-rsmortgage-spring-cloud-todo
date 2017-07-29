@@ -1,0 +1,83 @@
+title Service Registration of a Spring Cloud Microservice Runtime Action Sequence
+
+Tomcat Container-->UdemyRsmortgageCustomerServiceNewApplication:Start
+UdemyRsmortgageCustomerServiceNewApplication-->SpringApplication: bootstrap
+SpringApplication-->ConfigClient:fetchProperties
+ConfigClient-->PropertySource(Git):fetchProperties
+PropertySource(Git)-->ConfigClient:properties
+ConfigClient-->SpringApplication:properties
+SpringApplication-->SpringContext:initialize
+SpringContext-->SpringApplication:initializedApplication
+SpringApplication-->ServiceDiscoveryClient:register
+ServiceDiscoveryClient-->ServiceRegistryServer:register
+ServiceRegistryServer-->ServiceDiscoveryClient:registrationComplete
+ServiceDiscoveryClient-->ApacheTomcatConsole:log registration confirmation
+ServiceDiscoveryClient-->Tomcat Container:ApplicationStarted
+
+title Customer Microservice Runtime Action Sequence
+
+Client-->UdemyRsmortgageCustomerServiceNewApplication:/rsmortgage-customerservice/v1/person POST
+UdemyRsmortgageCustomerServiceNewApplication->CustomerController: createCustomer
+CustomerController-->CustomerService:createCustomer
+CustomerService-->CustomerRepository:save
+CustomerRepository-->SpringDataJPA:save
+SpringDataJPA-->CustomerRepository:Customer
+CustomerRepository-->CustomerService:Customer
+CustomerService-->CustomerController:Customer
+CustomerController-->ApplicationEventLisener:publishEvent(Customer)
+ApplicationEventLisener-->CustomerEventLisener:CustomerEvent(Customer)
+CustomerController-->Jackson:ConvertToJson
+Jackson-->CustomerController:Jackson
+CustomerController-->Client:Json
+
+title Customer Account Microservice Runtime Action Sequence Using Spring Feign Declarative Client, 
+Ribbon Client Side Load Balancing, Spring Cloud Service Discovery etc
+
+Client-->UdemyRsmortgageCustomerAccountServiceNewApplication:/rsmortgage-customer-accountservice/v1/person POST
+UdemyRsmortgageCustomerAccountServiceNewApplication->CustomerAccountController: createCustomerAccount
+CustomerAccountController-->CustomerAccountService:createCustomerAccount
+CustomerAccountService-->CustomerFeignClient:validateCustomer
+CustomerFeignClient-->ServiceRegistrationServer:fetchInstance(custoerServiceLogicalName)
+ServiceRegistrationServer-->CustomerFeignClient:healthyCustomerInstances
+CustomerFeignClient-->RibbonClientSideLoadBalancer:makeCustomerCall
+RibbonClientSideLoadBalancer-->CustomerServiceInstance:validateCustomer
+CustomerServiceInstance-->RibbonClientSideLoadBalancer:validCustomer
+RibbonClientSideLoadBalancer-->CustomerFeignClient:validCustomer
+CustomerFeignClient-->CustomerAccountService:validCustomer
+CustomerAccountService-->CustomerAccountRepository:save
+CustomerAccountRepository-->SpringDataJPA:save
+SpringDataJPA-->CustomerAccountRepository:CustomerAccount
+CustomerAccountRepository-->CustomerAccountService:CustomerAccount
+CustomerAccountService-->CustomerAccountController:CustomerAccount
+CustomerAccountController-->ApplicationEventLisener:publishEvent(CustomerAccount)
+ApplicationEventLisener-->CustomerAccountEventLisener:CustomerAccountEvent(CustomerAccount)
+CustomerAccountController-->Jackson:ConvertToJson
+Jackson-->CustomerAccountController:Jackson
+CustomerAccountController-->Client:Json
+
+title Customer Account Microservice Runtime Action Sequence Using Spring Feign Declarative Client, 
+Ribbon Client Side Load Balancing, Hystrix Circuit Breaker, Spring Cloud Service Discovery etc
+
+Client-->UdemyRsmortgageCustomerAccountServiceNewApplication:/rsmortgage-customer-accountservice/v1/person POST
+UdemyRsmortgageCustomerAccountServiceNewApplication->CustomerAccountController: createCustomerAccount
+CustomerAccountController-->CustomerAccountService:createCustomerAccount
+CustomerAccountService-->CustomerFeignClient:validateCustomer
+CustomerFeignClient-->ServiceRegistrationServer:fetchInstance(custoerServiceLogicalName)
+ServiceRegistrationServer-->CustomerFeignClient:healthyCustomerInstances
+CustomerFeignClient-->RibbonClientSideLoadBalancer:makeCustomerCall
+RibbonClientSideLoadBalancer-->CustomerServiceInstance:validateCustomer
+CustomerServiceInstance-->RibbonClientSideLoadBalancer:validCustomer
+RibbonClientSideLoadBalancer-->CustomerFeignClient:failedValidation / Timeout / Service Down
+CustomerFeignClient-->CustomerAccountService:throwException
+CustomerAccountService-->HystrixCommand:enableCircuitBreaker
+HystrixCommand-->CustomerAccountService:saveCustomerAccountWithoutValidationAlternativeMethod
+CustomerAccountService-->CustomerAccountRepository:save
+CustomerAccountRepository-->SpringDataJPA:save
+SpringDataJPA-->CustomerAccountRepository:CustomerAccount
+CustomerAccountRepository-->CustomerAccountService:CustomerAccount
+CustomerAccountService-->CustomerAccountController:CustomerAccount
+CustomerAccountController-->ApplicationEventLisener:publishEvent(CustomerAccount)
+ApplicationEventLisener-->CustomerAccountEventLisener:CustomerAccountEvent(CustomerAccount)
+CustomerAccountController-->Jackson:ConvertToJson
+Jackson-->CustomerAccountController:Jackson
+CustomerAccountController-->Client:Json
