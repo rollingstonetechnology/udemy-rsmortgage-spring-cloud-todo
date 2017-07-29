@@ -1,1 +1,1 @@
-# Spring Boot Microservice Template
+# Spring Boot and Spring Cloud Microservice Template
